@@ -7,7 +7,12 @@
   },
   "servers": [
     {
-      "url": "https://api.bank.com/fraud"
+      "url": "https://api.bank.com/fraud",
+      "description": "Основной REST API микросервиса (анализ, модели, откат)"
+    },
+    {
+      "url": "https://monitoring.bank.com/fraud_metrics",
+      "description": "Компонент мониторинга (Metrics Exporter). Используется системой мониторинга (например, Prometheus)"
     }
   ],
   "components": {
@@ -279,6 +284,7 @@
     "/metrics": {
       "get": {
         "summary": "Возвращает метрики текущей модели",
+        "description": "Этот эндпоинт предоставляется отдельным компонентом мониторинга (Metrics Exporter), не входит в REST API App. Используется для сбора метрик системой мониторинга (например, Prometheus).",
         "security": [
           {
             "bearerAuth": []
@@ -306,3 +312,4 @@
     }
   }
 }
+
