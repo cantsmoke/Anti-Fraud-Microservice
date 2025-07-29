@@ -1,0 +1,213 @@
+openapi: 3.0.3
+info:
+  title: Fraud Detection Microservice API
+  version: 1.1.0
+  description: >
+    API для анализа транзакций и управления ML-моделью в antifraud микросервисе.
+    Все запросы требуют JWT-аутентификации.
+
+servers:
+  - url: https://api.bank.com/fraud
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    TransactionRequest:
+      type: object
+      required:
+        - transaction_id
+        - sender_id
+        - receiver_id
+        - amount
+        - currency
+        - device_info
+      properties:
+        transaction_id:
+          type: string
+        sender_id:
+          type: string
+        receiver_id:
+          type: string
+        amount:
+          type: number
+          format: float
+        currency:
+          type: string
+          example: "RUB"
+        device_info:
+          type: object
+          required:
+            - device_type
+            - os
+            - app_version
+            - ip_address
+            - geo_ip
+            - user_agent
+          properties:
+            device_type:
+              type: string
+              example: "mobile"
+            os:
+              type: string
+              example: "iOS"
+            app_version:
+              type: string
+              example: "1.3.7"
+            ip_address:
+              type: string
+              example: "192.168.0.1"
+            geo_ip:
+              type: object
+              required: [country, region, city]
+              properties:
+                country:
+                  type: string
+                  example: "Russia"
+                region:
+                  type: string
+                  example: "Moscow"
+                city:
+                  type: string
+                  example: "Moscow"
+            user_agent:
+              type: string
+              example: "Mozilla/5.0..."
+
+    TransactionResponse:
+      type: object
+      properties:
+        transaction_id:
+          type: string
+        risk_level:
+          type: string
+          enum: [low, medium, high]
+        reason:
+          type: string
+          description: Бизнес-правило или имя модели/score source
+
+    LoadModelRequest:
+      type: object
+      required: [model_version]
+      properties:
+        model_version:
+          type: string
+          description: Уникальный идентификатор новой версии модели
+
+    RollbackRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          description: Причина отката (например, критическое падение метрик)
+
+    ModelMetrics:
+      type: object
+      properties:
+        model_version:
+          type: string
+        roc_auc:
+          type: number
+          format: float
+        precision:
+          type: number
+          format: float
+        recall:
+          type: number
+          format: float
+        f1_score:
+          type: number
+          format: float
+        timestamp:
+          type: string
+          format: date-time
+
+paths:
+  /analyze:
+    post:
+      summary: Анализирует транзакцию в реальном времени
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionRequest'
+      responses:
+        '200':
+          description: Результат анализа транзакции
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+        '400':
+          description: Неверный формат запроса или отсутствуют поля
+        '401':
+          description: Неавторизованный доступ
+        '500':
+          description: Внутренняя ошибка сервера
+
+  /load_model:
+    post:
+      summary: Загружает и активирует новую ML-модель
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoadModelRequest'
+      responses:
+        '200':
+          description: Новая модель успешно загружена и активирована
+        '400':
+          description: Неверный формат запроса
+        '401':
+          description: Неавторизованный доступ
+        '500':
+          description: Ошибка загрузки модели
+
+  /rollback_model:
+    post:
+      summary: Выполняет откат модели к предыдущей версии
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RollbackRequest'
+      responses:
+        '200':
+          description: Модель успешно откатана
+        '400':
+          description: Откат невозможен (нет предыдущей версии)
+        '401':
+          description: Неавторизованный доступ
+        '500':
+          description: Внутренняя ошибка при откате
+
+  /metrics:
+    get:
+      summary: Возвращает метрики текущей модели
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Метрики модели
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelMetrics'
+        '401':
+          description: Неавторизованный доступ
+        '500':
+          description: Ошибка получения метрик
