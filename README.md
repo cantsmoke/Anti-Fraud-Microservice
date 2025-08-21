@@ -39,7 +39,6 @@
 ## Автор
 **Кузнецов Арсений**  
 email: [ababaan365@gmail.com](mailto:ababaan365@gmail.com)  
-phone: +7 (901) 701-80-33  
 Telegram: [@cantsmoke](https://t.me/cantsmoke)  
 
 ##
